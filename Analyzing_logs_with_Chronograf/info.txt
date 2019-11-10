@@ -1,0 +1,127 @@
+
+# Analyzing logs with Chronograf #
+
+
+
+TICK Stack is a collection of open source components that combine to deliver a platform for easily storing, visualising and monitoring time series data such as metrics and events. 
+
+Please have a look at my video related to TICK 
+
+https://youtu.be/7X95OQMh-HI
+
+
+Rsyslog extends syslog protocol with new features like:
+
+RELP Protocol support [Reliable Event Logging Protocol]
+Buffered operation support.
+    
+https://www.networkmanagementsoftware.com/what-is-syslog/
+https://www.rsyslog.com/doc/v8-stable/configuration/modules/imfile.html
+https://serverfault.com/questions/692309/what-is-the-difference-between-syslog-rsyslog-and-syslog-ng
+https://www.syslog-ng.com/products/open-source-log-management/syslog-ng-rsyslog-comparison.aspx
+https://www.influxdata.com/blog/telegraf-correlate-log-metrics-data-performance-bottlenecks/
+
+
+
+Severity level
+
+VALUE	SEVERITY	KEYWORD	DESCRIPTION	EXAMPLES
+0	Emergency	emerg	System is unusable	This level should not be used by applications.
+1	Alert	alert	Should be corrected immediately	Loss of the primary ISP connection.
+2	Critical	crit	Critical conditions	A failure in the system's primary application.
+3	Error	err	Error conditions	An application has exceeded its file storage limit and attempts to write are failing.
+4	Warning	warning	May indicate that an error will occur if action is not taken.	A non-root file system has only 2GB remaining.
+5	Notice	notice	Events that are unusual, but not error conditions.	 
+6	Informational	info	Normal operational messages that require no action.	An application has started, paused or ended successfully.
+7	Debug	debug	Information useful to developers for debugging the application.	 
+
+
+Levels 5, 6 and 7 are not required and will consume unnecessary resources
+
+
+
+
+https://gist.github.com/GaryRogers/85c8f2a805010ceeccc6
+https://petermolnar.net/log-nginx-to-rsyslog/
+https://www.loggly.com/ultimate-guide/centralizing-apache-logs/
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
+[RSyslog Forwarding Setup]
+
+$ActionQueueType LinkedList # use asynchronous processing
+$ActionQueueFileName srvrfwd # set file name, also enables disk mode
+$ActionResumeRetryCount -1 # infinite retries on insert failure
+$ActionQueueSaveOnShutdown on # save in-memory data if rsyslog shuts down
+$ModLoad imudp #loads the udp module
+#listen for messages on udp localhost:514 $UDPServerAddress localhost $UDPServerRun 514 *.*
+@@(o)127.0.0.1:6514;RSYSLOG_SyslogProtocol23Format
+
+
+
+# Apache
+module(load="imfile" PollingInterval="10")
+
+# Apache access file:
+input(type="imfile"
+      File="/var/log/httpd/access_log"
+      Tag="apache-access"
+      Severity="info")
+
+# Apache error file:
+input(type="imfile"
+      File="/var/log/httpd/error_log"
+      Tag="apache-error"
+      Severity="info")
+      
+---------------------
+
+# Nginx
+$ModLoad imfile
+
+# error log
+$InputFileName /var/log/nginx/error.log
+$InputFileTag nginx-error:
+$InputFileStateFile stat-nginx-error
+$InputFileSeverity error
+$InputFileFaility local6
+$InputFilePollInterval 1
+$InputRunFileMonitor
+
+# access log
+$InputFileName /var/log/nginx/access.log
+$InputFileTag nginx-access:
+$InputFileStateFile stat-nginx-access
+$InputFileSeverity notice
+$InputFileFaility local6
+$InputFilePollInterval 1
+$InputRunFileMonitor
+
+
+*****************************************************************************
+
+Telegraf configs.
+
+# Apache
+[[inputs.logparser]]
+	files = ["/var/log/httpd/access_log"]
+	from_beginning = false
+	[inputs.logparser.grok]
+	patterns = ["%{COMBINED_LOG_FORMAT}"]
+	measurement = "apache_access_log"
+	custom_pattern_files = []
+	custom_patterns = '''
+    	'''
+
+# Nginx
+ [[inputs.logparser]]
+  ## files to tail.
+  files = ["/var/log/nginx/access.log"]
+  ## Read file from beginning.
+  from_beginning = false
+  ## Override the default measurement name, which would be "logparser_grok"
+  name_override = "nginx_access_log"
+  ## For parsing logstash-style "grok" patterns:
+  [inputs.logparser.grok]
+    patterns = ["%{COMBINED_LOG_FORMAT}"] 
