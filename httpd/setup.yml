@@ -1,0 +1,6 @@
+---
+- name: DEMO Play Book
+  hosts: apache-nodes
+  gather_facts: no
+  roles:
+    - httpd

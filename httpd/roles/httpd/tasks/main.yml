@@ -1,0 +1,3 @@
+- include: begin.yml
+- include: generate_index.yml
+- include: outage.yml

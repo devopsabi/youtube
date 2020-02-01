@@ -1,0 +1,12 @@
+- include_vars: vars/node1_contents.yml
+  when: inventory_hostname == "192.168.33.21"
+
+- include_vars: vars/node2_contents.yml
+  when: inventory_hostname == "192.168.33.22"
+
+- name: Generating Index file for NODE  {{inventory_hostname}}
+  template:
+    src=templates/index.j2 
+    dest=/var/www/html/index.html
+  with_items:
+  - "{{ node }}"

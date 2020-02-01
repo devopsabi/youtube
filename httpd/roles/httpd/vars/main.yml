@@ -1,0 +1,4 @@
+---
+# custom configs
+outage: sitedown.html
+httpd_conf: httpd.conf

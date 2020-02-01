@@ -1,0 +1,25 @@
+-   name:   Apache2 | Centos Update
+    yum:
+     name: '*'
+     state: latest
+    register: update
+
+-   name: APACHE2| Install httpd
+    yum:
+        name:   httpd
+        state:  present
+    register:  apache_o
+
+-   debug: var=apache_o
+
+#-   name:  APACHE2| Copy httpd CONF
+#    copy:   src={{ httpd_conf }} dest=/etc/httpd/conf/httpd.conf
+#    register:   output
+
+#-   debug: var=output
+
+-   name:  APACHE2| Starting httpd
+    service:
+        name:   httpd
+        state:  started
+    register: started

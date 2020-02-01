@@ -1,0 +1,4 @@
+#Node 01 file contents
+node:
+  - name: NODE_01
+    color: blue
